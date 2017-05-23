@@ -2,14 +2,22 @@ package com.appculture;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.support.annotation.DrawableRes;
+import android.support.annotation.Nullable;
+import android.support.annotation.RawRes;
+import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.Surface;
 
+import com.diegocarloslima.byakugallery.lib.TileBitmapDrawable;
 import com.diegocarloslima.byakugallery.lib.TouchImageView;
+
+import java.io.InputStream;
 
 public class PanoramaImageView extends TouchImageView implements SensorEventListener {
     private static final int NEGATIVE_DIRECTION = -1;
@@ -120,5 +128,15 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
             default:
                 return REVERSE_LANDSCAPE;
         }
+    }
+
+    public void setPanoramaFromRes(@RawRes int rawResImage, @DrawableRes int placeholderRes, @Nullable TileBitmapDrawable.OnInitializeListener initializeListener) {
+        final InputStream is = getResources().openRawResource(rawResImage);
+        final Drawable placeHolder = ContextCompat.getDrawable(getContext(), placeholderRes);
+        TileBitmapDrawable.attachTileBitmapDrawable(this, is, placeHolder, initializeListener);
+    }
+
+    public void setPanoramaFromRes(@RawRes int rawResImage, @DrawableRes int placeholderRes) {
+        setPanoramaFromRes(rawResImage, placeholderRes, null);
     }
 }
