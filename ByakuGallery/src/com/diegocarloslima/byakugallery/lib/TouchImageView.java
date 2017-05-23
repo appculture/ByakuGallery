@@ -17,276 +17,280 @@ import android.widget.ImageView;
 
 public class TouchImageView extends ImageView {
 
-	private static final int DOUBLE_TAP_ANIMATION_DURATION = 300;
-	private static final int SCALE_END_ANIMATION_DURATION = 200;
+    private static final int DOUBLE_TAP_ANIMATION_DURATION = 300;
+    private static final int SCALE_END_ANIMATION_DURATION = 200;
 
-	private Drawable mDrawable;
-	private int mDrawableIntrinsicWidth;
-	private int mDrawableIntrinsicHeight;
+    private Drawable mDrawable;
+    private int mDrawableIntrinsicWidth;
+    private int mDrawableIntrinsicHeight;
 
-	private final TouchGestureDetector mTouchGestureDetector;
+    private final TouchGestureDetector mTouchGestureDetector;
 
-	private final Matrix mMatrix = new Matrix();
-	private final float[] mMatrixValues = new float[9];
+    private final Matrix mMatrix = new Matrix();
+    private final float[] mMatrixValues = new float[9];
 
-	private float mScale;
-	private float mMaxScale = 1;
-	private float mTranslationX;
-	private float mTranslationY;
+    private float mScale;
+    private float mMaxScale = 1;
+    private float mTranslationX;
+    private float mTranslationY;
 
-	private Float mLastFocusX;
-	private Float mLastFocusY;
+    private boolean zoomOnDoubleTap = false;
+    private boolean allowScrollOnTouch = false;
 
-	private final FlingScroller mFlingScroller = new FlingScroller();
-	private boolean mIsAnimatingBack;
+    private Float mLastFocusX;
+    private Float mLastFocusY;
 
-	public TouchImageView(Context context) {
-		this(context, null);
-	}
+    private final FlingScroller mFlingScroller = new FlingScroller();
+    private boolean mIsAnimatingBack;
 
-	public TouchImageView(Context context, AttributeSet attrs) {
-		this(context, attrs, 0);
-	}
+    public TouchImageView(Context context) {
+        this(context, null);
+    }
 
-	public TouchImageView(Context context, AttributeSet attrs, int defStyle) {
-		super(context, attrs, defStyle);
+    public TouchImageView(Context context, AttributeSet attrs) {
+        this(context, attrs, 0);
+    }
 
-		final TouchGestureDetector.OnTouchGestureListener listener = new TouchGestureDetector.OnTouchGestureListener() {
+    public TouchImageView(Context context, AttributeSet attrs, int defStyle) {
+        super(context, attrs, defStyle);
 
-			@Override
-			public boolean onSingleTapConfirmed(MotionEvent e) {
-				return performClick();
-			}
+        final TouchGestureDetector.OnTouchGestureListener listener = new TouchGestureDetector.OnTouchGestureListener() {
 
-			@Override
-			public void onLongPress(MotionEvent e) {
-				performLongClick();
-			}
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                return performClick();
+            }
 
-			@Override
-			public boolean onDoubleTap(MotionEvent e) {
-				loadMatrixValues();
+            @Override
+            public void onLongPress(MotionEvent e) {
+                performLongClick();
+            }
 
-				final float minScale = getMinScale();
-				// If we have already zoomed in, we should return to our initial scale value (minScale). Otherwise, scale to full size
-				final float targetScale = mScale > minScale ? minScale : mMaxScale;
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                if (!zoomOnDoubleTap) return false;
+                loadMatrixValues();
 
-				// First, we try to keep the focused point in the same position when the animation ends
-				final float desiredTranslationX = e.getX() - (e.getX() - mTranslationX) * (targetScale / mScale);
-				final float desiredTranslationY = e.getY() - (e.getY() - mTranslationY) * (targetScale / mScale);
+                final float minScale = getMinScale();
+                // If we have already zoomed in, we should return to our initial scale value (minScale). Otherwise, scale to full size
+                final float targetScale = mScale > minScale ? minScale : mMaxScale;
 
-				// Here, we apply a correction to avoid unwanted blank spaces
-				final float targetTranslationX = desiredTranslationX + computeTranslation(getMeasuredWidth(), mDrawableIntrinsicWidth * targetScale, desiredTranslationX, 0);
-				final float targetTranslationY = desiredTranslationY + computeTranslation(getMeasuredHeight(), mDrawableIntrinsicHeight * targetScale, desiredTranslationY, 0);
+                // First, we try to keep the focused point in the same position when the animation ends
+                final float desiredTranslationX = e.getX() - (e.getX() - mTranslationX) * (targetScale / mScale);
+                final float desiredTranslationY = e.getY() - (e.getY() - mTranslationY) * (targetScale / mScale);
 
-				clearAnimation();
-				final Animation animation = new TouchAnimation(targetScale, targetTranslationX, targetTranslationY);
-				animation.setDuration(DOUBLE_TAP_ANIMATION_DURATION);
-				startAnimation(animation);
+                // Here, we apply a correction to avoid unwanted blank spaces
+                final float targetTranslationX = desiredTranslationX + computeTranslation(getMeasuredWidth(), mDrawableIntrinsicWidth * targetScale, desiredTranslationX, 0);
+                final float targetTranslationY = desiredTranslationY + computeTranslation(getMeasuredHeight(), mDrawableIntrinsicHeight * targetScale, desiredTranslationY, 0);
 
-				return true;
-			}
+                clearAnimation();
+                final Animation animation = new TouchAnimation(targetScale, targetTranslationX, targetTranslationY);
+                animation.setDuration(DOUBLE_TAP_ANIMATION_DURATION);
+                startAnimation(animation);
 
-			@Override
-			public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-				// Sometimes, this method is called just after an onScaleEnd event. In this case, we want to wait until we animate back our image
-				if(mIsAnimatingBack) {
-					return false;
-				}
+                return true;
+            }
 
-				loadMatrixValues();
+            @Override
+            public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+                // Sometimes, this method is called just after an onScaleEnd event. In this case, we want to wait until we animate back our image
+                if (mIsAnimatingBack || !allowScrollOnTouch) {
+                    return false;
+                }
 
-				final float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
-				final float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
+                loadMatrixValues();
 
-				final float dx = computeTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, -distanceX);
-				final float dy = computeTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, -distanceY);
-				mMatrix.postTranslate(dx, dy);
+                final float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
+                final float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
 
-				clearAnimation();
-				ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
+                final float dx = computeTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, -distanceX);
+                final float dy = computeTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, -distanceY);
+                mMatrix.postTranslate(dx, dy);
 
-				return true;
-			}
+                clearAnimation();
+                ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
 
-			@Override
-			public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
-				// Sometimes, this method is called just after an onScaleEnd event. In this case, we want to wait until we animate back our image
-				if(mIsAnimatingBack) {
-					return false;
-				}
+                return true;
+            }
 
-				loadMatrixValues();
+            @Override
+            public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+                // Sometimes, this method is called just after an onScaleEnd event. In this case, we want to wait until we animate back our image
+                if (mIsAnimatingBack || !allowScrollOnTouch) {
+                    return false;
+                }
 
-				final float horizontalSideFreeSpace = (getMeasuredWidth() - mDrawableIntrinsicWidth * mScale) / 2F;
-				final float minTranslationX = horizontalSideFreeSpace > 0 ? horizontalSideFreeSpace : getMeasuredWidth() - mDrawableIntrinsicWidth * mScale;
-				final float maxTranslationX = horizontalSideFreeSpace > 0 ? horizontalSideFreeSpace : 0;
+                loadMatrixValues();
 
-				final float verticalSideFreeSpace = (getMeasuredHeight() - mDrawableIntrinsicHeight * mScale) / 2F;
-				final float minTranslationY = verticalSideFreeSpace > 0 ? verticalSideFreeSpace : getMeasuredHeight() - mDrawableIntrinsicHeight * mScale;
-				final float maxTranslationY = verticalSideFreeSpace > 0 ? verticalSideFreeSpace : 0;
+                final float horizontalSideFreeSpace = (getMeasuredWidth() - mDrawableIntrinsicWidth * mScale) / 2F;
+                final float minTranslationX = horizontalSideFreeSpace > 0 ? horizontalSideFreeSpace : getMeasuredWidth() - mDrawableIntrinsicWidth * mScale;
+                final float maxTranslationX = horizontalSideFreeSpace > 0 ? horizontalSideFreeSpace : 0;
 
-				// Using FlingScroller here. The results were better than the Scroller class
-				// https://android.googlesource.com/platform/packages/apps/Gallery2/+/master/src/com/android/gallery3d/ui/FlingScroller.java
-				mFlingScroller.fling(Math.round(mTranslationX), Math.round(mTranslationY), Math.round(velocityX), Math.round(velocityY), Math.round(minTranslationX), Math.round(maxTranslationX), Math.round(minTranslationY), Math.round(maxTranslationY));
+                final float verticalSideFreeSpace = (getMeasuredHeight() - mDrawableIntrinsicHeight * mScale) / 2F;
+                final float minTranslationY = verticalSideFreeSpace > 0 ? verticalSideFreeSpace : getMeasuredHeight() - mDrawableIntrinsicHeight * mScale;
+                final float maxTranslationY = verticalSideFreeSpace > 0 ? verticalSideFreeSpace : 0;
 
-				clearAnimation();
-				final Animation animation = new FlingAnimation();
-				animation.setDuration(mFlingScroller.getDuration());
-				animation.setInterpolator(new LinearInterpolator());
-				startAnimation(animation);
+                // Using FlingScroller here. The results were better than the Scroller class
+                // https://android.googlesource.com/platform/packages/apps/Gallery2/+/master/src/com/android/gallery3d/ui/FlingScroller.java
+                mFlingScroller.fling(Math.round(mTranslationX), Math.round(mTranslationY), Math.round(velocityX), Math.round(velocityY), Math.round(minTranslationX), Math.round(maxTranslationX), Math.round(minTranslationY), Math.round(maxTranslationY));
 
-				return true;
-			}
+                clearAnimation();
+                final Animation animation = new FlingAnimation();
+                animation.setDuration(mFlingScroller.getDuration());
+                animation.setInterpolator(new LinearInterpolator());
+                startAnimation(animation);
 
-			@Override
-			public boolean onScaleBegin(ScaleGestureDetector detector) {
-				mLastFocusX = null;
-				mLastFocusY = null;
+                return true;
+            }
 
-				return true;
-			}
+            @Override
+            public boolean onScaleBegin(ScaleGestureDetector detector) {
+                mLastFocusX = null;
+                mLastFocusY = null;
 
-			@Override
-			public boolean onScale(ScaleGestureDetector detector) {
-				loadMatrixValues();
+                return true;
+            }
 
-				float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
-				float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                loadMatrixValues();
 
-				final float focusX = computeFocus(getMeasuredWidth(), currentDrawableWidth, mTranslationX, detector.getFocusX());
-				final float focusY = computeFocus(getMeasuredHeight(), currentDrawableHeight, mTranslationY, detector.getFocusY());
+                float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
+                float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
 
-				// Here, we provide the ability to scroll while scaling
-				if(mLastFocusX != null && mLastFocusY != null) {
-					final float dx = computeScaleTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, focusX - mLastFocusX);
-					final float dy = computeScaleTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, focusY - mLastFocusY);
-					
-					if(dx != 0 || dy != 0) {
-						mMatrix.postTranslate(dx, dy);
-					}
-				}
+                final float focusX = computeFocus(getMeasuredWidth(), currentDrawableWidth, mTranslationX, detector.getFocusX());
+                final float focusY = computeFocus(getMeasuredHeight(), currentDrawableHeight, mTranslationY, detector.getFocusY());
 
-				final float scale = computeScale(getMinScale(), mMaxScale, mScale, detector.getScaleFactor());
-				mMatrix.postScale(scale, scale, focusX, focusY);
+                // Here, we provide the ability to scroll while scaling
+                if (mLastFocusX != null && mLastFocusY != null) {
+                    final float dx = computeScaleTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, focusX - mLastFocusX);
+                    final float dy = computeScaleTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, focusY - mLastFocusY);
 
-				mLastFocusX = focusX;
-				mLastFocusY = focusY;
-				
-				clearAnimation();
-				ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
+                    if (dx != 0 || dy != 0) {
+                        mMatrix.postTranslate(dx, dy);
+                    }
+                }
 
-				return true;
-			}
+                final float scale = computeScale(getMinScale(), mMaxScale, mScale, detector.getScaleFactor());
+                mMatrix.postScale(scale, scale, focusX, focusY);
 
-			@Override
-			public void onScaleEnd(ScaleGestureDetector detector) {
-				loadMatrixValues();
+                mLastFocusX = focusX;
+                mLastFocusY = focusY;
 
-				final float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
-				final float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
+                clearAnimation();
+                ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
 
-				final float dx = computeTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, 0);
-				final float dy = computeTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, 0);
+                return true;
+            }
 
-				if(Math.abs(dx) < 1 && Math.abs(dy) < 1) {
-					return;
-				}
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) {
+                loadMatrixValues();
 
-				final float targetTranslationX = mTranslationX + dx;
-				final float targetTranslationY = mTranslationY + dy;
+                final float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
+                final float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
 
-				clearAnimation();
-				final Animation animation = new TouchAnimation(mScale, targetTranslationX, targetTranslationY);
-				animation.setDuration(SCALE_END_ANIMATION_DURATION);
-				startAnimation(animation);
+                final float dx = computeTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, 0);
+                final float dy = computeTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, 0);
 
-				mIsAnimatingBack = true;
-			}
-		};
+                if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
+                    return;
+                }
 
-		mTouchGestureDetector = new TouchGestureDetector(context, listener);
+                final float targetTranslationX = mTranslationX + dx;
+                final float targetTranslationY = mTranslationY + dy;
 
-		super.setScaleType(ScaleType.MATRIX);
-	}
+                clearAnimation();
+                final Animation animation = new TouchAnimation(mScale, targetTranslationX, targetTranslationY);
+                animation.setDuration(SCALE_END_ANIMATION_DURATION);
+                startAnimation(animation);
 
-	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		final int oldMeasuredWidth = getMeasuredWidth();
-		final int oldMeasuredHeight = getMeasuredHeight();
+                mIsAnimatingBack = true;
+            }
+        };
 
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        mTouchGestureDetector = new TouchGestureDetector(context, listener);
 
-		if(oldMeasuredWidth != getMeasuredWidth() || oldMeasuredHeight != getMeasuredHeight()) {
-			resetToInitialState();
-		}
-	}
-	
-	@Override
-	protected void onDraw(Canvas canvas) {
-		super.setImageMatrix(mMatrix);
-		super.onDraw(canvas);
-	}
+        super.setScaleType(ScaleType.MATRIX);
+    }
 
-	@Override
-	public void setImageMatrix(Matrix matrix) {
-		if(matrix == null) {
-			matrix = new Matrix();
-		}
-		
-		if(!mMatrix.equals(matrix)) {
-			mMatrix.set(matrix);
-			invalidate();
-		}
-	}
+    @Override
+    protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+        final int oldMeasuredWidth = getMeasuredWidth();
+        final int oldMeasuredHeight = getMeasuredHeight();
 
-	@Override
-	public Matrix getImageMatrix() {
-		return mMatrix;
-	}
+        super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
-	@Override
-	public boolean onTouchEvent(MotionEvent event) {
-		mTouchGestureDetector.onTouchEvent(event);
+        if (oldMeasuredWidth != getMeasuredWidth() || oldMeasuredHeight != getMeasuredHeight()) {
+            resetToInitialState();
+        }
+    }
 
-		return true;
-	}
+    @Override
+    protected void onDraw(Canvas canvas) {
+        super.setImageMatrix(mMatrix);
+        super.onDraw(canvas);
+    }
 
-	@Override
-	public void clearAnimation() {
-		super.clearAnimation();
-		mIsAnimatingBack = false;
-	}
+    @Override
+    public void setImageMatrix(Matrix matrix) {
+        if (matrix == null) {
+            matrix = new Matrix();
+        }
 
-	@Override
-	public void setImageDrawable(Drawable drawable) {
-		super.setImageDrawable(drawable);
-		if(mDrawable != drawable) {
-			mDrawable = drawable;
-			if(drawable != null) {
-				mDrawableIntrinsicWidth = drawable.getIntrinsicWidth();
-				mDrawableIntrinsicHeight = drawable.getIntrinsicHeight();
-				resetToInitialState();
-			} else {
-				mDrawableIntrinsicWidth = 0;
-				mDrawableIntrinsicHeight = 0;
-			}
-		}
-	}
+        if (!mMatrix.equals(matrix)) {
+            mMatrix.set(matrix);
+            invalidate();
+        }
+    }
 
-	@Override
-	public void setScaleType(ScaleType scaleType) {
-		if(scaleType != ScaleType.MATRIX) {
-			throw new IllegalArgumentException("Unsupported scaleType. Only ScaleType.MATRIX is allowed.");
-		}
-		super.setScaleType(scaleType);
-	}
+    @Override
+    public Matrix getImageMatrix() {
+        return mMatrix;
+    }
 
-	@Override
-	public boolean canScrollHorizontally(int direction) {
-		loadMatrixValues();
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        mTouchGestureDetector.onTouchEvent(event);
+
+        return true;
+    }
+
+    @Override
+    public void clearAnimation() {
+        super.clearAnimation();
+        mIsAnimatingBack = false;
+    }
+
+    @Override
+    public void setImageDrawable(Drawable drawable) {
+        super.setImageDrawable(drawable);
+        if (mDrawable != drawable) {
+            mDrawable = drawable;
+            if (drawable != null) {
+                mDrawableIntrinsicWidth = drawable.getIntrinsicWidth();
+                mDrawableIntrinsicHeight = drawable.getIntrinsicHeight();
+                resetToInitialState();
+            } else {
+                mDrawableIntrinsicWidth = 0;
+                mDrawableIntrinsicHeight = 0;
+            }
+        }
+    }
+
+    @Override
+    public void setScaleType(ScaleType scaleType) {
+        if (scaleType != ScaleType.MATRIX) {
+            throw new IllegalArgumentException("Unsupported scaleType. Only ScaleType.MATRIX is allowed.");
+        }
+        super.setScaleType(scaleType);
+    }
+
+    @Override
+    public boolean canScrollHorizontally(int direction) {
+        loadMatrixValues();
         return canScroll(getMeasuredWidth(), mDrawableIntrinsicWidth * mScale, mTranslationX, direction);
-	}
+    }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     @Override
@@ -296,178 +300,187 @@ public class TouchImageView extends ImageView {
     }
 
     public void setMaxScale(float maxScale) {
-		mMaxScale = maxScale;
-	}
+        mMaxScale = maxScale;
+    }
 
-	private void resetToInitialState() {
-		mMatrix.reset();
-		final float minScale = getMinScale();
-		mMatrix.postScale(minScale, minScale);
+    public void setZoomOnDoubleTap(boolean zoomOnDoubleTap) {
+        this.zoomOnDoubleTap = zoomOnDoubleTap;
+    }
 
-		final float[] values = new float[9];
-		mMatrix.getValues(values);
+    public void setScrollableOnTouch(boolean allowScroll) {
+        this.allowScrollOnTouch = allowScroll;
+    }
 
-		final float freeSpaceHorizontal = (getMeasuredWidth() - (mDrawableIntrinsicWidth * minScale)) / 2F;
-		final float freeSpaceVertical = (getMeasuredHeight() - (mDrawableIntrinsicHeight * minScale)) / 2F;
-		mMatrix.postTranslate(freeSpaceHorizontal, freeSpaceVertical);
-		
-		invalidate();
-	}
+    // this method sometimes makes problems with resetting panorama image to center when expanding
+    // maybe we should use mMatrix.postScale(scale, scale, focusX, focusY)
+    private void resetToInitialState() {
+        mMatrix.reset();
+        final float minScale = getMinScale();
+        mMatrix.postScale(minScale, minScale);
 
-	private void loadMatrixValues() {
-		mMatrix.getValues(mMatrixValues);
-		mScale = mMatrixValues[Matrix.MSCALE_X];
-		mTranslationX = mMatrixValues[Matrix.MTRANS_X];
-		mTranslationY = mMatrixValues[Matrix.MTRANS_Y];
-	}
+        final float[] values = new float[9];
+        mMatrix.getValues(values);
 
-	private float getMinScale() {
-		float minScale = Math.min(getMeasuredWidth() / (float) mDrawableIntrinsicWidth, getMeasuredHeight() / (float) mDrawableIntrinsicHeight);
-		if(minScale > mMaxScale) {
-			minScale = mMaxScale;
-		}
-		return minScale;
-	}
+        final float freeSpaceHorizontal = (getMeasuredWidth() - (mDrawableIntrinsicWidth * minScale)) / 2F;
+        final float freeSpaceVertical = (getMeasuredHeight() - (mDrawableIntrinsicHeight * minScale)) / 2F;
+        mMatrix.postTranslate(freeSpaceHorizontal, freeSpaceVertical);
+
+        invalidate();
+    }
+
+    private void loadMatrixValues() {
+        mMatrix.getValues(mMatrixValues);
+        mScale = mMatrixValues[Matrix.MSCALE_X];
+        mTranslationX = mMatrixValues[Matrix.MTRANS_X];
+        mTranslationY = mMatrixValues[Matrix.MTRANS_Y];
+    }
+
+    private float getMinScale() {
+        float minScale = Math.max(getMeasuredWidth() / (float) mDrawableIntrinsicWidth, getMeasuredHeight() / (float) mDrawableIntrinsicHeight);
+        if (minScale > mMaxScale) {
+            minScale = mMaxScale;
+        }
+        return minScale;
+    }
 
     private static boolean canScroll(float viewSize, float drawableSize, float currentTranslation, int direction) {
-        if(direction > 0) {
+        if (direction > 0) {
             return Math.round(currentTranslation) < 0;
-        } else if(direction < 0) {
+        } else if (direction < 0) {
             return Math.round(currentTranslation) > viewSize - Math.round(drawableSize);
         }
         return false;
     }
 
-	// The translation values must be in [0, viewSize - drawableSize], except if we have free space. In that case we will translate to half of the free space
-	private static float computeTranslation(float viewSize, float drawableSize, float currentTranslation, float delta) {
-		final float sideFreeSpace = (viewSize - drawableSize) / 2F;
+    // The translation values must be in [0, viewSize - drawableSize], except if we have free space. In that case we will translate to half of the free space
+    private static float computeTranslation(float viewSize, float drawableSize, float currentTranslation, float delta) {
+        final float sideFreeSpace = (viewSize - drawableSize) / 2F;
 
-		if(sideFreeSpace > 0) {
-			return sideFreeSpace - currentTranslation;
-		} else if(currentTranslation + delta > 0) {
-			return -currentTranslation;
-		} else if(currentTranslation + delta < viewSize - drawableSize) {
-			return viewSize - drawableSize - currentTranslation;
-		}
+        if (sideFreeSpace > 0) {
+            return sideFreeSpace - currentTranslation;
+        } else if (currentTranslation + delta > 0) {
+            return -currentTranslation;
+        } else if (currentTranslation + delta < viewSize - drawableSize) {
+            return viewSize - drawableSize - currentTranslation;
+        }
 
-		return delta;
-	}
-	
-	private static float computeScaleTranslation(float viewSize, float drawableSize, float currentTranslation, float delta) {
-		final float minTranslation = viewSize > drawableSize ? 0 : viewSize - drawableSize;
-		final float maxTranslation = viewSize > drawableSize ? viewSize - drawableSize : 0;
+        return delta;
+    }
 
-		if(currentTranslation < minTranslation && delta > 0) {
-			if(currentTranslation + delta > maxTranslation) {
-				return maxTranslation - currentTranslation;
-			} else {
-				return delta;
-			}
-		} else if(currentTranslation > maxTranslation && delta < 0) {
-			if(currentTranslation + delta < minTranslation) {
-				return minTranslation - currentTranslation;
-			}
-			else {
-				return delta;
-			}
-		} else if(currentTranslation > minTranslation && currentTranslation < maxTranslation) {
-			if(currentTranslation + delta < minTranslation) {
-				return minTranslation - currentTranslation;
-			} else if(currentTranslation + delta > maxTranslation) {
-				return maxTranslation - currentTranslation;
-			} else {
-				return delta;
-			}
-		}
-		return 0;
-	}
+    private static float computeScaleTranslation(float viewSize, float drawableSize, float currentTranslation, float delta) {
+        final float minTranslation = viewSize > drawableSize ? 0 : viewSize - drawableSize;
+        final float maxTranslation = viewSize > drawableSize ? viewSize - drawableSize : 0;
 
-	// If our focal point is outside the image, we will project it to our image bounds
-	private static float computeFocus(float viewSize, float drawableSize, float currentTranslation, float focusCoordinate) {
-		if(currentTranslation > 0 && focusCoordinate < currentTranslation) {
-			return currentTranslation;
-		} else if(currentTranslation < viewSize - drawableSize && focusCoordinate > currentTranslation + drawableSize) {
-			return drawableSize + currentTranslation;
-		}
+        if (currentTranslation < minTranslation && delta > 0) {
+            if (currentTranslation + delta > maxTranslation) {
+                return maxTranslation - currentTranslation;
+            } else {
+                return delta;
+            }
+        } else if (currentTranslation > maxTranslation && delta < 0) {
+            if (currentTranslation + delta < minTranslation) {
+                return minTranslation - currentTranslation;
+            } else {
+                return delta;
+            }
+        } else if (currentTranslation > minTranslation && currentTranslation < maxTranslation) {
+            if (currentTranslation + delta < minTranslation) {
+                return minTranslation - currentTranslation;
+            } else if (currentTranslation + delta > maxTranslation) {
+                return maxTranslation - currentTranslation;
+            } else {
+                return delta;
+            }
+        }
+        return 0;
+    }
 
-		return focusCoordinate;
-	}
+    // If our focal point is outside the image, we will project it to our image bounds
+    private static float computeFocus(float viewSize, float drawableSize, float currentTranslation, float focusCoordinate) {
+        if (currentTranslation > 0 && focusCoordinate < currentTranslation) {
+            return currentTranslation;
+        } else if (currentTranslation < viewSize - drawableSize && focusCoordinate > currentTranslation + drawableSize) {
+            return drawableSize + currentTranslation;
+        }
 
-	// The scale values must be in [minScale, maxScale]
-	private static float computeScale(float minScale, float maxScale, float currentScale, float delta) {
-		if(currentScale * delta < minScale) {
-			return minScale / currentScale;
-		} else if(currentScale * delta > maxScale) {
-			return maxScale / currentScale;
-		}
+        return focusCoordinate;
+    }
 
-		return delta;
-	}
+    // The scale values must be in [minScale, maxScale]
+    private static float computeScale(float minScale, float maxScale, float currentScale, float delta) {
+        if (currentScale * delta < minScale) {
+            return minScale / currentScale;
+        } else if (currentScale * delta > 4 * maxScale) {
+            return maxScale / 4 * currentScale;
+        }
 
-	private class FlingAnimation extends Animation {
+        return delta;
+    }
 
-		@Override
-		protected void applyTransformation(float interpolatedTime, Transformation t) {
-			mFlingScroller.computeScrollOffset(interpolatedTime);
+    private class FlingAnimation extends Animation {
 
-			loadMatrixValues();
+        @Override
+        protected void applyTransformation(float interpolatedTime, Transformation t) {
+            mFlingScroller.computeScrollOffset(interpolatedTime);
 
-			final float dx = mFlingScroller.getCurrX() - mTranslationX;
-			final float dy = mFlingScroller.getCurrY() - mTranslationY;
-			mMatrix.postTranslate(dx, dy);
+            loadMatrixValues();
 
-			ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
-		}
-	}
+            final float dx = mFlingScroller.getCurrX() - mTranslationX;
+            final float dy = mFlingScroller.getCurrY() - mTranslationY;
+            mMatrix.postTranslate(dx, dy);
 
-	private class TouchAnimation extends Animation {
+            ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
+        }
+    }
 
-		private float initialScale;
-		private float initialTranslationX;
-		private float initialTranslationY;
+    private class TouchAnimation extends Animation {
 
-		private float targetScale;
-		private float targetTranslationX;
-		private float targetTranslationY;
+        private float initialScale;
+        private float initialTranslationX;
+        private float initialTranslationY;
 
-		TouchAnimation(float targetScale, float targetTranslationX, float targetTranslationY) {
-			loadMatrixValues();
+        private float targetScale;
+        private float targetTranslationX;
+        private float targetTranslationY;
 
-			this.initialScale =  mScale;
-			this.initialTranslationX = mTranslationX;
-			this.initialTranslationY = mTranslationY;
+        TouchAnimation(float targetScale, float targetTranslationX, float targetTranslationY) {
+            loadMatrixValues();
 
-			this.targetScale = targetScale;
-			this.targetTranslationX = targetTranslationX;
-			this.targetTranslationY = targetTranslationY;
-		}
+            this.initialScale = mScale;
+            this.initialTranslationX = mTranslationX;
+            this.initialTranslationY = mTranslationY;
 
-		@Override
-		protected void applyTransformation(float interpolatedTime, Transformation t) {
-			loadMatrixValues();
+            this.targetScale = targetScale;
+            this.targetTranslationX = targetTranslationX;
+            this.targetTranslationY = targetTranslationY;
+        }
 
-			if(interpolatedTime >= 1) {
-				mMatrix.getValues(mMatrixValues);
-				mMatrixValues[Matrix.MSCALE_X] = this.targetScale;
-				mMatrixValues[Matrix.MSCALE_Y] = this.targetScale;
-				mMatrixValues[Matrix.MTRANS_X] = this.targetTranslationX;
-				mMatrixValues[Matrix.MTRANS_Y] = this.targetTranslationY;
-				mMatrix.setValues(mMatrixValues);
+        @Override
+        protected void applyTransformation(float interpolatedTime, Transformation t) {
+            loadMatrixValues();
 
-			} else {
-				final float scaleFactor = (this.initialScale + interpolatedTime * (this.targetScale - this.initialScale)) / mScale;
-				mMatrix.postScale(scaleFactor, scaleFactor);
+            if (interpolatedTime >= 1) {
+                mMatrix.getValues(mMatrixValues);
+                mMatrixValues[Matrix.MSCALE_X] = this.targetScale;
+                mMatrixValues[Matrix.MSCALE_Y] = this.targetScale;
+                mMatrixValues[Matrix.MTRANS_X] = this.targetTranslationX;
+                mMatrixValues[Matrix.MTRANS_Y] = this.targetTranslationY;
+                mMatrix.setValues(mMatrixValues);
 
-				mMatrix.getValues(mMatrixValues);
-				final float currentTranslationX = mMatrixValues[Matrix.MTRANS_X];
-				final float currentTranslationY = mMatrixValues[Matrix.MTRANS_Y];
+            } else {
+                final float scaleFactor = (this.initialScale + interpolatedTime * (this.targetScale - this.initialScale)) / mScale;
+                mMatrix.postScale(scaleFactor, scaleFactor);
 
-				final float dx = this.initialTranslationX + interpolatedTime * (this.targetTranslationX - this.initialTranslationX) - currentTranslationX;
-				final float dy = this.initialTranslationY + interpolatedTime * (this.targetTranslationY - this.initialTranslationY) - currentTranslationY;
-				mMatrix.postTranslate(dx, dy);
-			}
+                mMatrix.getValues(mMatrixValues);
+                final float currentTranslationX = mMatrixValues[Matrix.MTRANS_X];
+                final float currentTranslationY = mMatrixValues[Matrix.MTRANS_Y];
 
-			ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
-		}
-	}
+                final float dx = this.initialTranslationX + interpolatedTime * (this.targetTranslationX - this.initialTranslationX) - currentTranslationX;
+                final float dy = this.initialTranslationY + interpolatedTime * (this.targetTranslationY - this.initialTranslationY) - currentTranslationY;
+                mMatrix.postTranslate(dx, dy);
+            }
+
+            ViewCompat.postInvalidateOnAnimation(TouchImageView.this);
+        }
+    }
 }
