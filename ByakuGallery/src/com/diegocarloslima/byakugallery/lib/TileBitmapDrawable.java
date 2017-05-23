@@ -193,7 +193,7 @@ public class TileBitmapDrawable extends Drawable {
         mLastMatrixValues = Arrays.copyOf(mMatrixValues, mMatrixValues.length);
 
         // The scale required to display the whole Bitmap inside the ImageView. It will be the minimum allowed scale value
-        final float minScale = Math.min(parentViewWidth / (float) mIntrinsicWidth, parentViewHeight / (float) mIntrinsicHeight);
+        final float minScale = Math.max(parentViewWidth / (float) mIntrinsicWidth, parentViewHeight / (float) mIntrinsicHeight);
 
         // The number of allowed levels for this Bitmap. Each subsequent level is half size of the previous one
         final int levelCount = Math.max(1, MathUtils.ceilLog2(mIntrinsicWidth / (mIntrinsicWidth * minScale)));
