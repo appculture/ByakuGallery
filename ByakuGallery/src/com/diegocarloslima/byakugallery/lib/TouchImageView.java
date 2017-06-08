@@ -6,6 +6,8 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
+import android.support.annotation.DrawableRes;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewCompat;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -283,6 +285,15 @@ public class TouchImageView extends ImageView {
         if (scaleType != ScaleType.MATRIX) {
             throw new IllegalArgumentException("Unsupported scaleType. Only ScaleType.MATRIX is allowed.");
         }
+        super.setScaleType(scaleType);
+    }
+
+    public void setRegularPhoto(@DrawableRes int drawableRes, ScaleType scaleType) {
+        setRegularPhoto(ContextCompat.getDrawable(getContext(), drawableRes), scaleType);
+    }
+
+    public void setRegularPhoto(Drawable imageDrawable, ScaleType scaleType) {
+        setImageDrawable(imageDrawable);
         super.setScaleType(scaleType);
     }
 
