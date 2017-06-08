@@ -1,2 +1,2 @@
 include ':ByakuGallerySample'
-include ':ByakuGallery'
+include ':ByakuGallery-lib'
