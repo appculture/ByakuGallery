@@ -148,6 +148,8 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     }
 
     public void setPanoramaFromBitmap(final Bitmap bitmap, @DrawableRes final int placeholderRes, @Nullable final TileBitmapDrawable.OnInitializeListener initializeListener) {
+        setScaleTypeMatrixIfNeeded();
+        
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -170,5 +172,11 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
             }
         });
 
+    }
+
+    private void setScaleTypeMatrixIfNeeded() {
+        if (getScaleType() != ScaleType.MATRIX){
+            setScaleType(ScaleType.MATRIX);
+        }
     }
 }
