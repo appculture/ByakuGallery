@@ -106,6 +106,14 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
 
     }
 
+    public float getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(float speed) {
+        this.speed = speed;
+    }
+
     public void startAccelerometer() {
         sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_FASTEST);
     }
