@@ -2,6 +2,7 @@ package com.appculture;
 
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -17,6 +18,8 @@ import android.view.Surface;
 import com.diegocarloslima.byakugallery.lib.TileBitmapDrawable;
 import com.diegocarloslima.byakugallery.lib.TouchImageView;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 public class PanoramaImageView extends TouchImageView implements SensorEventListener {
@@ -138,5 +141,34 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
 
     public void setPanoramaFromRes(@RawRes int rawResImage, @DrawableRes int placeholderRes) {
         setPanoramaFromRes(rawResImage, placeholderRes, null);
+    }
+
+    public void setPanoramaFromBitmap(Bitmap bitmap, @DrawableRes int placeholderRes) {
+        setPanoramaFromBitmap(bitmap, placeholderRes, null);
+    }
+
+    public void setPanoramaFromBitmap(final Bitmap bitmap, @DrawableRes final int placeholderRes, @Nullable final TileBitmapDrawable.OnInitializeListener initializeListener) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                final Drawable placeHolder = ContextCompat.getDrawable(getContext(), placeholderRes);
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                bitmap.compress(Bitmap.CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
+                byte[] bitmapData = bos.toByteArray();
+                ByteArrayInputStream bs = new ByteArrayInputStream(bitmapData);
+                loadImageFromUiThread(bs, placeHolder, initializeListener);
+            }
+        }).start();
+
+    }
+
+    private void loadImageFromUiThread(final InputStream inputStream, final Drawable placeholder, @Nullable final TileBitmapDrawable.OnInitializeListener initializeListener) {
+        post(new Runnable() {
+            @Override
+            public void run() {
+                TileBitmapDrawable.attachTileBitmapDrawable(PanoramaImageView.this, inputStream, placeholder, initializeListener);
+            }
+        });
+
     }
 }
