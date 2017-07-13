@@ -157,11 +157,14 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
 
     public void setPanoramaFromBitmap(final Bitmap bitmap, @DrawableRes final int placeholderRes, @Nullable final TileBitmapDrawable.OnInitializeListener initializeListener) {
         setScaleTypeMatrixIfNeeded();
-        
+
         new Thread(new Runnable() {
             @Override
             public void run() {
-                final Drawable placeHolder = ContextCompat.getDrawable(getContext(), placeholderRes);
+                Drawable placeHolder = null;
+                if (placeholderRes != 0) {
+                    placeHolder = ContextCompat.getDrawable(getContext(), placeholderRes);
+                }
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 bitmap.compress(Bitmap.CompressFormat.PNG, 0 /*ignored for PNG*/, bos);
                 byte[] bitmapData = bos.toByteArray();
@@ -170,6 +173,14 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
             }
         }).start();
 
+    }
+
+    public void setPanoramaFromBitmap(Bitmap bitmap) {
+        setPanoramaFromBitmap(bitmap, null);
+    }
+
+    public void setPanoramaFromBitmap(Bitmap bitmap, @Nullable final TileBitmapDrawable.OnInitializeListener initializeListener) {
+        setPanoramaFromBitmap(bitmap, 0, initializeListener);
     }
 
     private void loadImageFromUiThread(final InputStream inputStream, final Drawable placeholder, @Nullable final TileBitmapDrawable.OnInitializeListener initializeListener) {
@@ -183,7 +194,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     }
 
     private void setScaleTypeMatrixIfNeeded() {
-        if (getScaleType() != ScaleType.MATRIX){
+        if (getScaleType() != ScaleType.MATRIX) {
             setScaleType(ScaleType.MATRIX);
         }
     }
