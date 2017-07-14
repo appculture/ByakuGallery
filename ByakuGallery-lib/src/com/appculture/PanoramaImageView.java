@@ -142,16 +142,13 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     }
 
     public void setPanoramaFromInputStream(InputStream is, @DrawableRes int placeholderRes, @Nullable TileBitmapDrawable.OnInitializeListener initializeListener) {
+        setScaleTypeMatrixIfNeeded();
         final Drawable placeHolder = ContextCompat.getDrawable(getContext(), placeholderRes);
         TileBitmapDrawable.attachTileBitmapDrawable(this, is, placeHolder, initializeListener);
     }
 
-    public void setPanoramaFromInputStream(InputStream is, @Nullable TileBitmapDrawable.OnInitializeListener initializeListener) {
-        setPanoramaFromInputStream(is, 0, initializeListener);
-    }
-
-    public void setPanoramaFromInputStream(InputStream is) {
-        setPanoramaFromInputStream(is, null);
+    public void setPanoramaFromInputStream(InputStream is, @DrawableRes int placeholderRes) {
+        setPanoramaFromInputStream(is, placeholderRes, null);
     }
 
     public void setPanoramaFromRes(@RawRes int rawResImage, @DrawableRes int placeholderRes, @Nullable TileBitmapDrawable.OnInitializeListener initializeListener) {
