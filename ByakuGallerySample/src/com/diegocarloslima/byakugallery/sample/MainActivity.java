@@ -32,6 +32,9 @@ public class MainActivity extends ListActivity {
 		case 1:
 			intentClass = GalleryViewPagerSampleActivity.class;
 			break;
+        case 2:
+            intentClass = PanoramaImageViewSampleActivity.class;
+            break;
 		}
 		
 		startActivity(new Intent(this, intentClass));
@@ -42,7 +45,8 @@ public class MainActivity extends ListActivity {
 		
 		data.add(createItem("TouchImageView Sample", "This sample uses TouchImageView and TileBitmapDrawable to show a large image."));
 		data.add(createItem("GalleryViewPager Sample", "This sample uses GalleryViewPager, TouchImageView and TileBitmapDrawable to show a gallery of images."));
-		
+		data.add(createItem("PanoramaImageView Sample", "This sample uses PanoramaImageView and TileBitmapDrawable to show a large image."));
+
 		return data;
 	}
 	
