@@ -18,7 +18,10 @@
         </activity>
         <activity android:name="com.diegocarloslima.byakugallery.sample.TouchImageViewSampleActivity" />
         <activity android:name="com.diegocarloslima.byakugallery.sample.GalleryViewPagerSampleActivity" />
-        <activity android:name="com.diegocarloslima.byakugallery.sample.PanoramaImageViewSampleActivity" />
+        <activity
+            android:name="com.diegocarloslima.byakugallery.sample.PanoramaImageViewSampleActivity"
+            android:configChanges="orientation|screenSize"
+            android:screenOrientation="user" />
     </application>
 
 </manifest>
