@@ -8,6 +8,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
@@ -85,6 +87,28 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         }
     }
 
+    @Override
+    protected Parcelable onSaveInstanceState() {
+        Bundle bundle = new Bundle();
+        bundle.putParcelable("instanceState", super.onSaveInstanceState());
+        bundle.putFloatArray("panorama_matrix_values", getMatrixValues());
+        bundle.putFloat("panorama_image_scale", getScale());
+        return bundle;
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Parcelable state) {
+        if (state instanceof Bundle) {
+            Bundle bundle = (Bundle) state;
+            setMatrixValues(bundle.getFloatArray("panorama_matrix_values"));
+            setScale(bundle.getFloat("panorama_image_scale"));
+            super.onRestoreInstanceState(bundle.getParcelable("instanceState"));
+            return;
+        }
+        super.onRestoreInstanceState(state);
+
+    }
+
     private void scrollVertically(float y) {
         if (!canScrollVertically(NEGATIVE_DIRECTION)) {
             getImageMatrix().postTranslate(0, -y);
@@ -125,6 +149,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     private void init() {
         sensorManager = (SensorManager) ((Activity) getContext()).getSystemService(Activity.SENSOR_SERVICE);
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+        setResetZoomOnMeasureAgain(false);
     }
 
     private int getScreenOrientation() {

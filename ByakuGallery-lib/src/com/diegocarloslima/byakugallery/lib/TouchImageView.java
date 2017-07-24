@@ -45,6 +45,8 @@ public class TouchImageView extends ImageView {
     private final FlingScroller mFlingScroller = new FlingScroller();
     private boolean mIsAnimatingBack;
 
+    private boolean resetZoomOnMeasureAgain = true;
+
     public TouchImageView(Context context) {
         this(context, null);
     }
@@ -223,7 +225,7 @@ public class TouchImageView extends ImageView {
 
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
 
-        if (oldMeasuredWidth != getMeasuredWidth() || oldMeasuredHeight != getMeasuredHeight()) {
+        if (resetZoomOnMeasureAgain && (oldMeasuredWidth != getMeasuredWidth() || oldMeasuredHeight != getMeasuredHeight())) {
             resetToInitialState();
         }
     }
@@ -344,6 +346,31 @@ public class TouchImageView extends ImageView {
         mScale = mMatrixValues[Matrix.MSCALE_X];
         mTranslationX = mMatrixValues[Matrix.MTRANS_X];
         mTranslationY = mMatrixValues[Matrix.MTRANS_Y];
+    }
+
+    public float[] getMatrixValues() {
+        return mMatrixValues;
+    }
+
+    public void setMatrixValues(float[] newMatrixValues) {
+        mMatrix.setValues(newMatrixValues);
+        loadMatrixValues();
+    }
+
+    public float getScale() {
+        return mScale;
+    }
+
+    public void setScale(float mScale) {
+        this.mScale = mScale;
+    }
+
+    public boolean isResetZoomOnMeasureAgain() {
+        return resetZoomOnMeasureAgain;
+    }
+
+    public void setResetZoomOnMeasureAgain(boolean resetZoomOnMeasureAgain) {
+        this.resetZoomOnMeasureAgain = resetZoomOnMeasureAgain;
     }
 
     private float getMinScale() {
