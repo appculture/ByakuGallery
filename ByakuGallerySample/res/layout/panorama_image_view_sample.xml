@@ -1,5 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.appculture.PanoramaImageView xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/touch_image_view_sample_image"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" />
+    android:layout_height="match_parent">
+
+    <com.appculture.PanoramaImageView
+        android:id="@+id/panorama_image_view_sample_image"
+        android:layout_width="match_parent"
+        android:layout_height="200dp" />
+
+    <Button
+        android:id="@+id/expandButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:text="Expand" />
+
+    <Button
+        android:id="@+id/collapseButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/expandButton"
+        android:text="Collapse" />
+</RelativeLayout>
