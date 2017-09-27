@@ -354,8 +354,8 @@ public class TouchImageView extends ImageView {
         return minScale;
     }
 
-    public float getScale() {
-        return mScale;
+    public boolean isZoomed() {
+        return mScale > 1.8;
     }
 
     private static boolean canScroll(float viewSize, float drawableSize, float currentTranslation, int direction) {
