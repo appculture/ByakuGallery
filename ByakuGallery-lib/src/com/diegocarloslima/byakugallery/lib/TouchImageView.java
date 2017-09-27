@@ -354,6 +354,10 @@ public class TouchImageView extends ImageView {
         return minScale;
     }
 
+    public float getScale() {
+        return mScale;
+    }
+
     private static boolean canScroll(float viewSize, float drawableSize, float currentTranslation, int direction) {
         if (direction > 0) {
             return Math.round(currentTranslation) < 0;
