@@ -206,24 +206,45 @@ public class TileBitmapDrawable extends Drawable {
         final int horizontalTiles = (int) Math.ceil(mIntrinsicWidth / (float) currentTileSize);
         final int verticalTiles = (int) Math.ceil(mIntrinsicHeight / (float) currentTileSize);
 
-        final int leftPosition = (int) (-translationX / scale);
-
-        final int visibleAreaLeft = leftPosition % mIntrinsicWidth;
-        final int offset = leftPosition - visibleAreaLeft;
         final int visibleAreaTop = Math.max(0, (int) (-translationY / scale));
-//        final int visibleAreaRight = Math.min(mIntrinsicWidth, Math.round((-translationX + parentViewWidth) / scale));
-        final int visibleAreaRight = Math.round((-translationX + parentViewWidth) / scale);
         final int visibleAreaBottom = Math.min(mIntrinsicHeight, Math.round((-translationY + parentViewHeight) / scale));
-        mVisibleAreaRect.set(visibleAreaLeft, visibleAreaTop, visibleAreaRight, visibleAreaBottom);
+
+        final int leftPosition = (int) (-translationX / scale);
+        final int visibleAreaLeft;
+        final int offset;
+        boolean drawHelper = false;
         int offsetHelper = 0;
-        if (visibleAreaRight > mIntrinsicWidth) {
-            offsetHelper = mIntrinsicWidth * (int) Math.ceil((float)leftPosition / mIntrinsicWidth);
-            int l = parentViewWidth - visibleAreaRight % mIntrinsicWidth;
-            mVisibleAreaRectHelper.set(-l,
-                    visibleAreaTop,
-                    (parentViewWidth - l),
-                    visibleAreaBottom);
+//        final int visibleAreaRight = Math.min(mIntrinsicWidth, Math.round((-translationX + parentViewWidth) / scale));
+        final int visibleAreaRight;
+        if (leftPosition > 0) {
+            visibleAreaLeft = leftPosition % mIntrinsicWidth;
+            offset = leftPosition - visibleAreaLeft;
+            visibleAreaRight = Math.round((-translationX + parentViewWidth) / scale);
+            if (visibleAreaRight > mIntrinsicWidth) {
+                drawHelper = true;
+                offsetHelper = mIntrinsicWidth * (int) Math.ceil((float)leftPosition / mIntrinsicWidth);
+                int visibleAreaLeftHelper = parentViewWidth - visibleAreaRight % mIntrinsicWidth;
+                mVisibleAreaRectHelper.set(-visibleAreaLeftHelper,
+                        visibleAreaTop,
+                        (parentViewWidth - visibleAreaLeftHelper),
+                        visibleAreaBottom);
+            }
+        } else {
+            visibleAreaLeft = mIntrinsicWidth + leftPosition % mIntrinsicWidth;
+            offset = leftPosition - visibleAreaLeft;
+            visibleAreaRight = visibleAreaLeft + parentViewWidth;
+            if (visibleAreaRight > mIntrinsicWidth) {
+                drawHelper = true;
+                offsetHelper = mIntrinsicWidth * (leftPosition / mIntrinsicWidth);
+                int visibleAreaLeftHelper = leftPosition % mIntrinsicWidth;
+                mVisibleAreaRectHelper.set(visibleAreaLeftHelper,
+                        visibleAreaTop,
+                        (visibleAreaLeftHelper + parentViewWidth),
+                        visibleAreaBottom);
+            }
         }
+        mVisibleAreaRect.set(visibleAreaLeft, visibleAreaTop, visibleAreaRight, visibleAreaBottom);
+
         boolean cacheMiss = false;
 
         for (int i = 0; i < horizontalTiles; i++) {
@@ -244,7 +265,7 @@ public class TileBitmapDrawable extends Drawable {
                         canvas.restoreToCount(saveCount);
                     }
                 }
-                if (offsetHelper != 0 && Rect.intersects(mVisibleAreaRectHelper, mTileRect)) {
+                if (drawHelper && Rect.intersects(mVisibleAreaRectHelper, mTileRect)) {
                     final int saveCount = canvas.save();
                     try {
                         canvas.translate(offsetHelper, 0);
