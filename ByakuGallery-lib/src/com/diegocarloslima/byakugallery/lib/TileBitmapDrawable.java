@@ -73,6 +73,7 @@ public class TileBitmapDrawable extends Drawable {
     private final Rect mTileRect = new Rect();
 
     private final Rect mVisibleAreaRect = new Rect();
+    private final Rect mVisibleAreaRectHelper = new Rect();
 
     private final Rect mScreenNailRect = new Rect();
 
@@ -89,7 +90,7 @@ public class TileBitmapDrawable extends Drawable {
     }
 
     private TileBitmapDrawable(ImageView parentView, BitmapRegionDecoder decoder, Bitmap screenNail) {
-        mParentView = new WeakReference<ImageView>(parentView);
+        mParentView = new WeakReference<>(parentView);
 
         synchronized (decoder) {
             mRegionDecoder = decoder;
@@ -175,7 +176,6 @@ public class TileBitmapDrawable extends Drawable {
         if (parentView == null) {
             return;
         }
-
         final int parentViewWidth = parentView.getWidth();
         final int parentViewHeight = parentView.getHeight();
         mMatrix = parentView.getImageMatrix();
@@ -206,12 +206,24 @@ public class TileBitmapDrawable extends Drawable {
         final int horizontalTiles = (int) Math.ceil(mIntrinsicWidth / (float) currentTileSize);
         final int verticalTiles = (int) Math.ceil(mIntrinsicHeight / (float) currentTileSize);
 
-        final int visibleAreaLeft = Math.max(0, (int) (-translationX / scale));
+        final int leftPosition = (int) (-translationX / scale);
+
+        final int visibleAreaLeft = leftPosition % mIntrinsicWidth;
+        final int offset = leftPosition - visibleAreaLeft;
         final int visibleAreaTop = Math.max(0, (int) (-translationY / scale));
-        final int visibleAreaRight = Math.min(mIntrinsicWidth, Math.round((-translationX + parentViewWidth) / scale));
+//        final int visibleAreaRight = Math.min(mIntrinsicWidth, Math.round((-translationX + parentViewWidth) / scale));
+        final int visibleAreaRight = Math.round((-translationX + parentViewWidth) / scale);
         final int visibleAreaBottom = Math.min(mIntrinsicHeight, Math.round((-translationY + parentViewHeight) / scale));
         mVisibleAreaRect.set(visibleAreaLeft, visibleAreaTop, visibleAreaRight, visibleAreaBottom);
-
+        int offsetHelper = 0;
+        if (visibleAreaRight > mIntrinsicWidth) {
+            offsetHelper = mIntrinsicWidth * (int) Math.ceil((float)leftPosition / mIntrinsicWidth);
+            int l = parentViewWidth - visibleAreaRight % mIntrinsicWidth;
+            mVisibleAreaRectHelper.set(-l,
+                    visibleAreaTop,
+                    (parentViewWidth - l),
+                    visibleAreaBottom);
+        }
         boolean cacheMiss = false;
 
         for (int i = 0; i < horizontalTiles; i++) {
@@ -224,33 +236,21 @@ public class TileBitmapDrawable extends Drawable {
                 mTileRect.set(tileLeft, tileTop, tileRight, tileBottom);
 
                 if (Rect.intersects(mVisibleAreaRect, mTileRect)) {
-
-                    final Tile tile = new Tile(mInstanceId, mTileRect, i, j, currentLevel);
-
-                    Bitmap cached = null;
-                    synchronized (sBitmapCacheLock) {
-                        cached = sBitmapCache.get(tile.getKey());
+                    final int saveCount = canvas.save();
+                    try {
+                        canvas.translate(offset, 0);
+                        cacheMiss = drawTile(canvas, currentLevel, cacheMiss, i, j, tileLeft, tileTop, tileRight, tileBottom);
+                    } finally {
+                        canvas.restoreToCount(saveCount);
                     }
-
-                    if (cached != null) {
-                        canvas.drawBitmap(cached, null, mTileRect, mPaint);
-                    } else {
-                        cacheMiss = true;
-
-                        synchronized (mDecodeQueue) {
-                            if (!mDecodeQueue.contains(tile)) {
-                                mDecodeQueue.add(tile);
-                            }
-                        }
-
-                        // The screenNail is used while the proper tile is being decoded
-                        final int screenNailLeft = Math.round(tileLeft * mScreenNail.getWidth() / (float) mIntrinsicWidth);
-                        final int screenNailTop = Math.round(tileTop * mScreenNail.getHeight() / (float) mIntrinsicHeight);
-                        final int screenNailRight = Math.round(tileRight * mScreenNail.getWidth() / (float) mIntrinsicWidth);
-                        final int screenNailBottom = Math.round(tileBottom * mScreenNail.getHeight() / (float) mIntrinsicHeight);
-                        mScreenNailRect.set(screenNailLeft, screenNailTop, screenNailRight, screenNailBottom);
-
-                        canvas.drawBitmap(mScreenNail, mScreenNailRect, mTileRect, mPaint);
+                }
+                if (offsetHelper != 0 && Rect.intersects(mVisibleAreaRectHelper, mTileRect)) {
+                    final int saveCount = canvas.save();
+                    try {
+                        canvas.translate(offsetHelper, 0);
+                        cacheMiss = drawTile(canvas, currentLevel, cacheMiss, i, j, tileLeft, tileTop, tileRight, tileBottom);
+                    } finally {
+                        canvas.restoreToCount(saveCount);
                     }
                 }
             }
@@ -260,6 +260,38 @@ public class TileBitmapDrawable extends Drawable {
         if (cacheMiss) {
             invalidateSelf();
         }
+    }
+
+    private boolean drawTile(Canvas canvas, int currentLevel, boolean cacheMiss, int i, int j, int tileLeft, int tileTop, int tileRight, int tileBottom) {
+        final Tile tile = new Tile(mInstanceId, mTileRect, i, j, currentLevel);
+
+        Bitmap cached = null;
+        synchronized (sBitmapCacheLock) {
+            cached = sBitmapCache.get(tile.getKey());
+        }
+
+        if (cached != null) {
+            canvas.drawBitmap(cached, null, mTileRect, mPaint);
+        } else {
+            cacheMiss = true;
+
+            synchronized (mDecodeQueue) {
+                if (!mDecodeQueue.contains(tile)) {
+                    mDecodeQueue.add(tile);
+                }
+            }
+
+            // The screenNail is used while the proper tile is being decoded
+            final int screenNailLeft = Math.round(tileLeft * mScreenNail.getWidth() / (float) mIntrinsicWidth);
+            final int screenNailTop = Math.round(tileTop * mScreenNail.getHeight() / (float) mIntrinsicHeight);
+            final int screenNailRight = Math.round(tileRight * mScreenNail.getWidth() / (float) mIntrinsicWidth);
+            final int screenNailBottom = Math.round(tileBottom * mScreenNail.getHeight() / (float) mIntrinsicHeight);
+            mScreenNailRect.set(screenNailLeft, screenNailTop, screenNailRight, screenNailBottom);
+
+            System.out.println("L: " + screenNailLeft + " R: " + screenNailRight + " R - L: " + (screenNailRight - screenNailLeft));
+            canvas.drawBitmap(mScreenNail, mScreenNailRect, mTileRect, mPaint);
+        }
+        return cacheMiss;
     }
 
     @Override

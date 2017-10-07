@@ -93,7 +93,15 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         }
     }
 
+    int count = 0;
+
     private void scrollHorizontally(float x) {
+        if (count < 3) {
+            count++;
+            return;
+        } else {
+            count = 0;
+        }
         if (!canScrollHorizontally(NEGATIVE_DIRECTION)) {
             getImageMatrix().postTranslate(-x, 0);
         } else if (!canScrollHorizontally(POSITIVE_DIRECTION)) {
