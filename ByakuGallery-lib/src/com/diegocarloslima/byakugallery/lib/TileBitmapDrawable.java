@@ -211,35 +211,31 @@ public class TileBitmapDrawable extends Drawable {
 
         final int leftPosition = (int) (-translationX / scale);
         final int visibleAreaLeft;
-        final int offset;
         boolean drawHelper = false;
         int offsetHelper = 0;
-        final int visibleAreaRight;
         if (leftPosition > 0) {
             visibleAreaLeft = leftPosition % mIntrinsicWidth;
-            offset = leftPosition - visibleAreaLeft;
-            visibleAreaRight = Math.min(mIntrinsicWidth, Math.round((-translationX + parentViewWidth) / scale));
-            if (visibleAreaRight >= 0.9*mIntrinsicWidth) {
+            if (visibleAreaLeft > (mIntrinsicWidth - parentViewWidth / scale)) {
                 drawHelper = true;
                 offsetHelper = mIntrinsicWidth * (int) Math.ceil((float)leftPosition / mIntrinsicWidth);
                 mVisibleAreaRectHelper.set(0,
                         visibleAreaTop,
-                        parentViewWidth,
+                        (int) (parentViewWidth / scale),
                         visibleAreaBottom);
             }
         } else {
             visibleAreaLeft = mIntrinsicWidth + leftPosition % mIntrinsicWidth;
-            offset = leftPosition - visibleAreaLeft;
-            visibleAreaRight = (int) (visibleAreaLeft + parentViewWidth * 1.5);
-            if (visibleAreaRight > mIntrinsicWidth) {
+            if (visibleAreaLeft > (mIntrinsicWidth - parentViewWidth / scale)) {
                 drawHelper = true;
                 offsetHelper = mIntrinsicWidth * (leftPosition / mIntrinsicWidth);
                 mVisibleAreaRectHelper.set(0,
                         visibleAreaTop,
-                        parentViewWidth,
+                        (int) (parentViewWidth / scale),
                         visibleAreaBottom);
             }
         }
+        final int visibleAreaRight = (int) (visibleAreaLeft + parentViewWidth / scale);
+        final int offset = leftPosition - visibleAreaLeft;
         mVisibleAreaRect.set(visibleAreaLeft, visibleAreaTop, visibleAreaRight, visibleAreaBottom);
 
         boolean cacheMiss = false;

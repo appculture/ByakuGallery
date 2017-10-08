@@ -237,7 +237,11 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         }
     }
 
-    public void setEndlessScrolling(boolean endlessScrolling) {
-        this.endlessScrolling = endlessScrolling;
+    public void enableEndlessScrolling() {
+        this.endlessScrolling = true;
+    }
+
+    public void disableEndlessScrolling() {
+        this.endlessScrolling = false;
     }
 }
