@@ -113,7 +113,7 @@ public class TileBitmapDrawable extends Drawable {
 
                 // The shared cache will have the minimum required size to display all visible tiles
                 // Here, we multiply by 4 because in ARGB_8888 config, each pixel is stored on 4 bytes
-                final int cacheSize = 4 * maxHorizontalTiles * maxVerticalTiles * mTileSize * mTileSize;
+                final int cacheSize = 2 * maxHorizontalTiles * maxVerticalTiles * mTileSize * mTileSize;
 
                 sBitmapCache = new BitmapLruCache(cacheSize);
             }
@@ -214,32 +214,29 @@ public class TileBitmapDrawable extends Drawable {
         final int offset;
         boolean drawHelper = false;
         int offsetHelper = 0;
-//        final int visibleAreaRight = Math.min(mIntrinsicWidth, Math.round((-translationX + parentViewWidth) / scale));
         final int visibleAreaRight;
         if (leftPosition > 0) {
             visibleAreaLeft = leftPosition % mIntrinsicWidth;
             offset = leftPosition - visibleAreaLeft;
-            visibleAreaRight = Math.round((-translationX + parentViewWidth) / scale);
-            if (visibleAreaRight > mIntrinsicWidth) {
+            visibleAreaRight = Math.min(mIntrinsicWidth, Math.round((-translationX + parentViewWidth) / scale));
+            if (visibleAreaRight >= 0.9*mIntrinsicWidth) {
                 drawHelper = true;
                 offsetHelper = mIntrinsicWidth * (int) Math.ceil((float)leftPosition / mIntrinsicWidth);
-                int visibleAreaLeftHelper = parentViewWidth - visibleAreaRight % mIntrinsicWidth;
-                mVisibleAreaRectHelper.set(-visibleAreaLeftHelper,
+                mVisibleAreaRectHelper.set(0,
                         visibleAreaTop,
-                        (parentViewWidth - visibleAreaLeftHelper),
+                        parentViewWidth,
                         visibleAreaBottom);
             }
         } else {
             visibleAreaLeft = mIntrinsicWidth + leftPosition % mIntrinsicWidth;
             offset = leftPosition - visibleAreaLeft;
-            visibleAreaRight = visibleAreaLeft + parentViewWidth;
+            visibleAreaRight = (int) (visibleAreaLeft + parentViewWidth * 1.5);
             if (visibleAreaRight > mIntrinsicWidth) {
                 drawHelper = true;
                 offsetHelper = mIntrinsicWidth * (leftPosition / mIntrinsicWidth);
-                int visibleAreaLeftHelper = leftPosition % mIntrinsicWidth;
-                mVisibleAreaRectHelper.set(visibleAreaLeftHelper,
+                mVisibleAreaRectHelper.set(0,
                         visibleAreaTop,
-                        (visibleAreaLeftHelper + parentViewWidth),
+                        parentViewWidth,
                         visibleAreaBottom);
             }
         }
@@ -456,7 +453,7 @@ public class TileBitmapDrawable extends Drawable {
             final Rect screenNailRect = new Rect(0, 0, decoder.getWidth(), decoder.getHeight());
 
             final BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inPreferredConfig = Config.ARGB_8888;
+            options.inPreferredConfig = Config.RGB_565;
             options.inPreferQualityOverSpeed = true;
             options.inSampleSize = (1 << (levelCount - 1));
 
@@ -537,7 +534,7 @@ public class TileBitmapDrawable extends Drawable {
                 }
 
                 final BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inPreferredConfig = Config.ARGB_8888;
+                options.inPreferredConfig = Config.RGB_565;
                 options.inPreferQualityOverSpeed = true;
                 options.inSampleSize = (1 << tile.mLevel);
 
