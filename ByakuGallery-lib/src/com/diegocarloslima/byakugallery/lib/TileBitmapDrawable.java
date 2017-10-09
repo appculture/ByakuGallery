@@ -214,6 +214,7 @@ public class TileBitmapDrawable extends Drawable {
         boolean drawHelper = false;
         int offsetHelper = 0;
         if (leftPosition > 0) {
+            // moving to right
             visibleAreaLeft = leftPosition % mIntrinsicWidth;
             if (visibleAreaLeft > (mIntrinsicWidth - parentViewWidth / scale)) {
                 drawHelper = true;
@@ -224,6 +225,7 @@ public class TileBitmapDrawable extends Drawable {
                         visibleAreaBottom);
             }
         } else {
+            // moving to left
             visibleAreaLeft = mIntrinsicWidth + leftPosition % mIntrinsicWidth;
             if (visibleAreaLeft > (mIntrinsicWidth - parentViewWidth / scale)) {
                 drawHelper = true;
