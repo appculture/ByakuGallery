@@ -35,9 +35,6 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     private Sensor sensor;
     private float speed = 7.0f;
 
-    private int scrollCounter = 0;
-    private boolean endlessScrolling;
-
     public PanoramaImageView(Context context) {
         super(context);
         init();
@@ -97,16 +94,6 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     }
 
     private void scrollHorizontally(float x) {
-        // I have no idea why, but having this counter here enables endless scrolling of the view
-        // (just scroll, redrawing is done in TileBitmapDrawable.java
-        if (endlessScrolling) {
-            if (scrollCounter < 3) {
-                scrollCounter++;
-                return;
-            } else {
-                scrollCounter = 0;
-            }
-        }
         if (!canScrollHorizontally(NEGATIVE_DIRECTION)) {
             getImageMatrix().postTranslate(-x, 0);
         } else if (!canScrollHorizontally(POSITIVE_DIRECTION)) {
@@ -235,13 +222,5 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         if (getScaleType() != ScaleType.MATRIX) {
             setScaleType(ScaleType.MATRIX);
         }
-    }
-
-    public void enableEndlessScrolling() {
-        this.endlessScrolling = true;
-    }
-
-    public void disableEndlessScrolling() {
-        this.endlessScrolling = false;
     }
 }

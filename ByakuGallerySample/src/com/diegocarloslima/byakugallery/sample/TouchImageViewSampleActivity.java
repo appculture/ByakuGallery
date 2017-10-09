@@ -20,6 +20,8 @@ public class TouchImageViewSampleActivity extends Activity {
 		setContentView(R.layout.touch_image_view_sample);
 
 		final TouchImageView image = (TouchImageView) findViewById(R.id.touch_image_view_sample_image);
+		image.setScrollableOnTouch(true);
+		image.setEndlessScrollingEnabled(true);
 		final InputStream is = getResources().openRawResource(R.raw.photo4);
 		final Drawable placeHolder = getResources().getDrawable(R.drawable.android_placeholder);
 		TileBitmapDrawable.attachTileBitmapDrawable(image, is, placeHolder, null);
