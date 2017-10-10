@@ -45,6 +45,8 @@ public class TouchImageView extends ImageView {
     private final FlingScroller mFlingScroller = new FlingScroller();
     private boolean mIsAnimatingBack;
 
+    private boolean endlessScrollingEnabled;
+
     public TouchImageView(Context context) {
         this(context, null);
     }
@@ -82,7 +84,7 @@ public class TouchImageView extends ImageView {
                 final float desiredTranslationY = e.getY() - (e.getY() - mTranslationY) * (targetScale / mScale);
 
                 // Here, we apply a correction to avoid unwanted blank spaces
-                final float targetTranslationX = desiredTranslationX + computeTranslation(getMeasuredWidth(), mDrawableIntrinsicWidth * targetScale, desiredTranslationX, 0);
+                final float targetTranslationX = desiredTranslationX + computeHorizontalTranslation(getMeasuredWidth(), mDrawableIntrinsicWidth * targetScale, desiredTranslationX, 0);
                 final float targetTranslationY = desiredTranslationY + computeTranslation(getMeasuredHeight(), mDrawableIntrinsicHeight * targetScale, desiredTranslationY, 0);
 
                 clearAnimation();
@@ -105,7 +107,7 @@ public class TouchImageView extends ImageView {
                 final float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
                 final float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
 
-                final float dx = computeTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, -distanceX);
+                final float dx = computeHorizontalTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, -distanceX);
                 final float dy = computeTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, -distanceY);
                 mMatrix.postTranslate(dx, dy);
 
@@ -192,7 +194,7 @@ public class TouchImageView extends ImageView {
                 final float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
                 final float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
 
-                final float dx = computeTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, 0);
+                final float dx = computeHorizontalTranslation(getMeasuredWidth(), currentDrawableWidth, mTranslationX, 0);
                 final float dy = computeTranslation(getMeasuredHeight(), currentDrawableHeight, mTranslationY, 0);
 
                 if (Math.abs(dx) < 1 && Math.abs(dy) < 1) {
@@ -300,7 +302,7 @@ public class TouchImageView extends ImageView {
     @Override
     public boolean canScrollHorizontally(int direction) {
         loadMatrixValues();
-        return canScroll(getMeasuredWidth(), mDrawableIntrinsicWidth * mScale, mTranslationX, direction);
+        return canScrollHorizontally(getMeasuredWidth(), mDrawableIntrinsicWidth * mScale, mTranslationX, direction);
     }
 
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
@@ -367,6 +369,14 @@ public class TouchImageView extends ImageView {
         return false;
     }
 
+    private boolean canScrollHorizontally(float viewSize, float drawableSize, float currentTranslation, int direction) {
+        if (endlessScrollingEnabled) {
+            return true;
+        } else {
+            return canScroll(viewSize, drawableSize, currentTranslation, direction);
+        }
+    }
+
     // The translation values must be in [0, viewSize - drawableSize], except if we have free space. In that case we will translate to half of the free space
     private static float computeTranslation(float viewSize, float drawableSize, float currentTranslation, float delta) {
         final float sideFreeSpace = (viewSize - drawableSize) / 2F;
@@ -380,6 +390,14 @@ public class TouchImageView extends ImageView {
         }
 
         return delta;
+    }
+
+    private float computeHorizontalTranslation(float viewSize, float drawableSize, float currentTranslation, float delta) {
+        if (endlessScrollingEnabled) {
+            return delta;
+        } else {
+            return computeTranslation(viewSize, drawableSize, currentTranslation, delta);
+        }
     }
 
     private static float computeScaleTranslation(float viewSize, float drawableSize, float currentTranslation, float delta) {
@@ -430,6 +448,10 @@ public class TouchImageView extends ImageView {
         }
 
         return delta;
+    }
+
+    public void setEndlessScrollingEnabled(boolean endlessScrollingEnabled) {
+        this.endlessScrollingEnabled = endlessScrollingEnabled;
     }
 
     private class FlingAnimation extends Animation {
