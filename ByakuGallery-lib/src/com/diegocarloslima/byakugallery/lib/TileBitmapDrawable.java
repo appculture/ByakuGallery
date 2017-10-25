@@ -113,7 +113,7 @@ public class TileBitmapDrawable extends Drawable {
 
                 // The shared cache will have the minimum required size to display all visible tiles
                 // Here, we multiply by 4 because in ARGB_8888 config, each pixel is stored on 4 bytes
-                final int cacheSize = 2 * maxHorizontalTiles * maxVerticalTiles * mTileSize * mTileSize;
+                final int cacheSize = 4 * maxHorizontalTiles * maxVerticalTiles * mTileSize * mTileSize;
 
                 sBitmapCache = new BitmapLruCache(cacheSize);
             }
@@ -451,7 +451,7 @@ public class TileBitmapDrawable extends Drawable {
             final Rect screenNailRect = new Rect(0, 0, decoder.getWidth(), decoder.getHeight());
 
             final BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inPreferredConfig = Config.RGB_565;
+            options.inPreferredConfig = Config.ARGB_8888;
             options.inPreferQualityOverSpeed = true;
             options.inSampleSize = (1 << (levelCount - 1));
 
@@ -532,7 +532,7 @@ public class TileBitmapDrawable extends Drawable {
                 }
 
                 final BitmapFactory.Options options = new BitmapFactory.Options();
-                options.inPreferredConfig = Config.RGB_565;
+                options.inPreferredConfig = Config.ARGB_8888;
                 options.inPreferQualityOverSpeed = true;
                 options.inSampleSize = (1 << tile.mLevel);
 
