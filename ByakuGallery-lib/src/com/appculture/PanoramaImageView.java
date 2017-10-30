@@ -23,13 +23,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 
 public class PanoramaImageView extends TouchImageView implements SensorEventListener {
-    private static final int NEGATIVE_DIRECTION = -1;
-    private static final int POSITIVE_DIRECTION = 1;
+    protected static final int NEGATIVE_DIRECTION = -1;
+    protected static final int POSITIVE_DIRECTION = 1;
 
-    private static final int PORTRAIT = 10;
-    private static final int LANDSCAPE = 11;
-    private static final int REVERSE_PORTRAITE = 12;
-    private static final int REVERSE_LANDSCAPE = 13;
+    protected static final int PORTRAIT = 10;
+    protected static final int LANDSCAPE = 11;
+    protected static final int REVERSE_PORTRAITE = 12;
+    protected static final int REVERSE_LANDSCAPE = 13;
 
     private SensorManager sensorManager;
     private Sensor sensor;
@@ -75,9 +75,9 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
                 scrollVertically(Y);
                 invalidate();
             } else if (getScreenOrientation() == REVERSE_LANDSCAPE) {
-                float Z = -event.values[0] * speed;
+                float Z = event.values[0] * speed;
                 float Y = 0;
-                getImageMatrix().postTranslate(-Z, Y);
+                getImageMatrix().postTranslate(Z * NEGATIVE_DIRECTION, Y);
                 scrollHorizontally(Z);
                 scrollVertically(Y);
                 invalidate();
@@ -85,7 +85,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         }
     }
 
-    private void scrollVertically(float y) {
+    protected void scrollVertically(float y) {
         if (!canScrollVertically(NEGATIVE_DIRECTION)) {
             getImageMatrix().postTranslate(0, -y);
         } else if (!canScrollVertically(POSITIVE_DIRECTION)) {
@@ -93,7 +93,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         }
     }
 
-    private void scrollHorizontally(float x) {
+    protected void scrollHorizontally(float x) {
         if (!canScrollHorizontally(NEGATIVE_DIRECTION)) {
             getImageMatrix().postTranslate(-x, 0);
         } else if (!canScrollHorizontally(POSITIVE_DIRECTION)) {
@@ -127,7 +127,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
     }
 
-    private int getScreenOrientation() {
+    protected int getScreenOrientation() {
         final int rotation = ((Activity) this.getContext()).getWindowManager().getDefaultDisplay().getOrientation();
         switch (rotation) {
             case Surface.ROTATION_0:
