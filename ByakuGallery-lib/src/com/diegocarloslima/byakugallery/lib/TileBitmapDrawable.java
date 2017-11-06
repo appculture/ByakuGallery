@@ -304,7 +304,7 @@ public class TileBitmapDrawable extends Drawable {
             final int screenNailBottom = Math.round(tileBottom * mScreenNail.getHeight() / (float) mIntrinsicHeight);
             mScreenNailRect.set(screenNailLeft, screenNailTop, screenNailRight, screenNailBottom);
 
-            System.out.println("L: " + screenNailLeft + " R: " + screenNailRight + " R - L: " + (screenNailRight - screenNailLeft));
+            //System.out.println("L: " + screenNailLeft + " R: " + screenNailRight + " R - L: " + (screenNailRight - screenNailLeft));
             canvas.drawBitmap(mScreenNail, mScreenNailRect, mTileRect, mPaint);
         }
         return cacheMiss;
