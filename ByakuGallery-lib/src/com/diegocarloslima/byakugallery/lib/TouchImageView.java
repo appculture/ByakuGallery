@@ -255,9 +255,7 @@ public class TouchImageView extends ImageView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
-        mTouchGestureDetector.onTouchEvent(event);
-
-        return true;
+        return mTouchGestureDetector.onTouchEvent(event);
     }
 
     @Override

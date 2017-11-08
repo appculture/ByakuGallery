@@ -24,7 +24,7 @@ public class MainActivity extends ListActivity {
 	@Override
 	protected void onListItemClick(ListView l, View v, int position, long id) {
 		Class<?> intentClass = null;
-		
+
 		switch(position) {
 		case 0:
 			intentClass = TouchImageViewSampleActivity.class;
@@ -32,26 +32,30 @@ public class MainActivity extends ListActivity {
 		case 1:
 			intentClass = GalleryViewPagerSampleActivity.class;
 			break;
+        case 2:
+            intentClass = TouchImageViewNestedActivity.class;
+            break;
 		}
-		
+
 		startActivity(new Intent(this, intentClass));
 	}
-	
+
 	private List<Map<String, String>> createData() {
 		List<Map<String, String>> data = new ArrayList<Map<String,String>>();
-		
+
 		data.add(createItem("TouchImageView Sample", "This sample uses TouchImageView and TileBitmapDrawable to show a large image."));
 		data.add(createItem("GalleryViewPager Sample", "This sample uses GalleryViewPager, TouchImageView and TileBitmapDrawable to show a gallery of images."));
-		
+        data.add(createItem("TouchImageView inside NestedScrollView", "This sample uses TouchImageView and TileBitmapDrawable to show a large image."));
+
 		return data;
 	}
-	
+
 	private Map<String, String> createItem(String title, String subtitle) {
 		Map<String, String> item = new HashMap<String, String>();
-		
+
 		item.put("title", title);
 		item.put("subtitle", subtitle);
-		
+
 		return item;
 	}
 }
