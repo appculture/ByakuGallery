@@ -1,11 +1,10 @@
 buildscript {
     repositories {
-        mavenCentral()
+        google()
         jcenter()
     }
-
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.3.2'
+        classpath 'com.android.tools.build:gradle:3.2.1'
     }
 }
 
@@ -18,8 +17,12 @@ allprojects {
     group = GROUP
 
     repositories {
-        mavenCentral()
+        google()
+        jcenter()
     }
 }
 
 apply plugin: 'android-reporting'
+//task clean(type: Delete) {
+//    delete rootProject.buildDir
+//}
