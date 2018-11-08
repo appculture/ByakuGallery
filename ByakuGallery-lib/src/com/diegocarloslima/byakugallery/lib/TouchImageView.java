@@ -175,8 +175,8 @@ public class TouchImageView extends ImageView {
                     }
                 }
 
-                final float scale = computeScale(getMinScale(), mMaxScale, mScale, detector.getScaleFactor());
-                mMatrix.postScale(scale, scale, focusX, focusY);
+                final float delta = computeDelta(getMinScale(), mMaxScale, mScale, detector.getScaleFactor());
+                mMatrix.postScale(delta, delta, focusX, focusY);
 
                 mLastFocusX = focusX;
                 mLastFocusY = focusY;
@@ -438,11 +438,12 @@ public class TouchImageView extends ImageView {
     }
 
     // The scale values must be in [minScale, maxScale]
-    private static float computeScale(float minScale, float maxScale, float currentScale, float delta) {
-        if (currentScale * delta < minScale) {
+    private static float computeDelta(float minScale, float maxScale, float currentScale, float delta) {
+        final float newScale = currentScale * delta;
+        if (newScale < minScale) {
             return minScale / currentScale;
-        } else if (currentScale * delta > 4 * maxScale) {
-            return maxScale / 4 * currentScale;
+        } else if (newScale > maxScale) {
+            return 1;
         }
 
         return delta;
