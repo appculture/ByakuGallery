@@ -1,6 +1,7 @@
 package com.diegocarloslima.byakugallery.sample;
 
 import android.app.Activity;
+import android.graphics.Bitmap;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 
@@ -24,7 +25,7 @@ public class TouchImageViewSampleActivity extends Activity {
 		image.setEndlessScrollingEnabled(true);
 		final InputStream is = getResources().openRawResource(R.raw.photo4);
 		final Drawable placeHolder = getResources().getDrawable(R.drawable.android_placeholder);
-		TileBitmapDrawable.attachTileBitmapDrawable(image, is, placeHolder, null);
+		TileBitmapDrawable.attachTileBitmapDrawable(image, is, placeHolder, Bitmap.Config.ARGB_8888, 4, null);
 	}
 
 	@Override

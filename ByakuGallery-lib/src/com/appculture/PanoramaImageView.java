@@ -35,6 +35,9 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     private Sensor sensor;
     private float speed = 7.0f;
 
+    private Bitmap.Config bitmapConfig = Bitmap.Config.ARGB_8888;
+    private int bitmapConfigMultiplier = 4;
+
     public PanoramaImageView(Context context) {
         super(context);
         init();
@@ -149,7 +152,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
             placeHolder = ContextCompat.getDrawable(getContext(), placeholderRes);
         }
 
-        TileBitmapDrawable.attachTileBitmapDrawable(this, is, placeHolder, initializeListener);
+        TileBitmapDrawable.attachTileBitmapDrawable(this, is, placeHolder, bitmapConfig, bitmapConfigMultiplier, initializeListener);
     }
 
     public void setPanoramaFromInputStream(InputStream is, @DrawableRes int placeholderRes) {
@@ -169,7 +172,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     public void setPanoramaFromRes(@RawRes int rawResImage, @DrawableRes int placeholderRes, @Nullable TileBitmapDrawable.OnInitializeListener initializeListener) {
         final InputStream is = getResources().openRawResource(rawResImage);
         final Drawable placeHolder = ContextCompat.getDrawable(getContext(), placeholderRes);
-        TileBitmapDrawable.attachTileBitmapDrawable(this, is, placeHolder, initializeListener);
+        TileBitmapDrawable.attachTileBitmapDrawable(this, is, placeHolder, bitmapConfig, bitmapConfigMultiplier, initializeListener);
     }
 
     public void setPanoramaFromRes(@RawRes int rawResImage, @DrawableRes int placeholderRes) {
@@ -212,7 +215,7 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         post(new Runnable() {
             @Override
             public void run() {
-                TileBitmapDrawable.attachTileBitmapDrawable(PanoramaImageView.this, inputStream, placeholder, initializeListener);
+                TileBitmapDrawable.attachTileBitmapDrawable(PanoramaImageView.this, inputStream, placeholder, bitmapConfig, bitmapConfigMultiplier, initializeListener);
             }
         });
 
@@ -222,5 +225,14 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
         if (getScaleType() != ScaleType.MATRIX) {
             setScaleType(ScaleType.MATRIX);
         }
+    }
+
+    public void setBitmapConfig(Bitmap.Config bitmapConfig, int bitmapConfigMultiplier) {
+        // The shared cache will have the minimum required size to display all visible tiles
+        // E.g. we multiply by 4 because in ARGB_8888 config, each pixel is stored on 4 bytes
+        // more info @ https://developer.android.com/reference/android/graphics/Bitmap.Config.html
+
+        this.bitmapConfig = bitmapConfig;
+        this.bitmapConfigMultiplier = bitmapConfigMultiplier;
     }
 }
