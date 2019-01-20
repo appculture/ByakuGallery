@@ -161,9 +161,14 @@ public class TouchImageView extends ImageView {
 
                 float currentDrawableWidth = mDrawableIntrinsicWidth * mScale;
                 float currentDrawableHeight = mDrawableIntrinsicHeight * mScale;
+                //old code that is causing translation when scaling image after image is
+                //wrapped around more then 1 image width(endless scroll)
+                //leave it here for references
+//                final float focusX = computeFocus(getMeasuredWidth(), currentDrawableWidth, mTranslationX, detector.getFocusX());
+//                final float focusY = computeFocus(getMeasuredHeight(), currentDrawableHeight, mTranslationY, detector.getFocusY());
 
-                final float focusX = computeFocus(getMeasuredWidth(), currentDrawableWidth, mTranslationX, detector.getFocusX());
-                final float focusY = computeFocus(getMeasuredHeight(), currentDrawableHeight, mTranslationY, detector.getFocusY());
+                final float focusX = detector.getFocusX();
+                final float focusY = detector.getFocusY();
 
                 // Here, we provide the ability to scroll while scaling
                 if (mLastFocusX != null && mLastFocusY != null) {
