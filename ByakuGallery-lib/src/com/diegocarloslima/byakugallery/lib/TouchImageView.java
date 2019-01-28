@@ -338,8 +338,9 @@ public class TouchImageView extends ImageView {
         mMatrix.getValues(values);
 
         final float freeSpaceHorizontal = (getMeasuredWidth() - (mDrawableIntrinsicWidth * minScale)) / 2F;
-        final float freeSpaceVertical = (getMeasuredHeight() - (mDrawableIntrinsicHeight * minScale)) / 2F;
-        mMatrix.postTranslate(freeSpaceHorizontal, freeSpaceVertical);
+        //translate bitmap to top of image
+//        final float freeSpaceVertical = (getMeasuredHeight() - (mDrawableIntrinsicHeight * minScale)) / 2F;
+        mMatrix.postTranslate(freeSpaceHorizontal, 0.0f/*freeSpaceVertical*/);
 
         invalidate();
     }
