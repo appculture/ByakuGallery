@@ -53,34 +53,44 @@ public class PanoramaImageView extends TouchImageView implements SensorEventList
     @Override
     public void onSensorChanged(SensorEvent event) {
         if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-            if (getScreenOrientation() == PORTRAIT) {
-                float X = event.values[1] * speed;
-                float Y = 0;
-                getImageMatrix().postTranslate(X, Y);
-                scrollHorizontally(X);
-                scrollVertically(Y);
-                invalidate();
-            } else if (getScreenOrientation() == LANDSCAPE) {
-                float Z = event.values[0] * speed;
-                float Y = 0;
-                getImageMatrix().postTranslate(Z, Y);
-                scrollHorizontally(Z);
-                scrollVertically(Y);
-                invalidate();
-            } else if (getScreenOrientation() == REVERSE_PORTRAITE) {
-                float X = event.values[1] * speed;
-                float Y = 0;
-                getImageMatrix().postTranslate(X, Y);
-                scrollHorizontally(X);
-                scrollVertically(Y);
-                invalidate();
-            } else if (getScreenOrientation() == REVERSE_LANDSCAPE) {
-                float Z = event.values[0] * speed;
-                float Y = 0;
-                getImageMatrix().postTranslate(Z * NEGATIVE_DIRECTION, Y);
-                scrollHorizontally(Z);
-                scrollVertically(Y);
-                invalidate();
+            int currentScreenOrientation = getScreenOrientation();
+            switch (currentScreenOrientation) {
+                case PORTRAIT: {
+                    float X = event.values[1] * speed;
+                    float Y = 0;
+                    getImageMatrix().postTranslate(X, Y);
+                    scrollHorizontally(X);
+                    scrollVertically(Y);
+                    invalidate();
+                    break;
+                }
+                case LANDSCAPE: {
+                    float Z = event.values[0] * speed;
+                    float Y = 0;
+                    getImageMatrix().postTranslate(Z, Y);
+                    scrollHorizontally(Z);
+                    scrollVertically(Y);
+                    invalidate();
+                    break;
+                }
+                case REVERSE_PORTRAITE: {
+                    float X = event.values[1] * speed;
+                    float Y = 0;
+                    getImageMatrix().postTranslate(X, Y);
+                    scrollHorizontally(X);
+                    scrollVertically(Y);
+                    invalidate();
+                    break;
+                }
+                case REVERSE_LANDSCAPE: {
+                    float Z = event.values[0] * speed;
+                    float Y = 0;
+                    getImageMatrix().postTranslate(Z * NEGATIVE_DIRECTION, Y);
+                    scrollHorizontally(Z);
+                    scrollVertically(Y);
+                    invalidate();
+                    break;
+                }
             }
         }
     }
